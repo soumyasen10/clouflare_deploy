@@ -1,18 +1,30 @@
-/**
- * Welcome to Cloudflare Workers! This is your first worker.
- *
- * - Run `npm run dev` in your terminal to start a development server
- * - Open a browser tab at http://localhost:8787/ to see your worker in action
- * - Run `npm run deploy` to publish your worker
- *
- * Bind resources to your worker in `wrangler.toml`. After adding bindings, a type definition for the
- * `Env` object can be regenerated with `npm run cf-typegen`.
- *
- * Learn more at https://developers.cloudflare.com/workers/
- */
+import { Hono, Next } from 'hono'
+import { PrismaClient } from '@prisma/client/edge'
+import { withAccelerate } from '@prisma/extension-accelerate'
+import { env } from 'hono/adapter'
 
-export default {
-	async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-		return new Response('Hello World!');
-	},
-};
+const app = new Hono()
+
+app.get('/', async (c) => {
+  // Todo add zod validation here
+//   const body: {
+//     name: string;
+//     email: string
+//   } = await c.req.json()
+  const { DATABASE_URL } = env<{ DATABASE_URL: string }>(c)
+
+  const prisma = new PrismaClient({
+      datasourceUrl: DATABASE_URL,
+  }).$extends(withAccelerate())
+
+  const res=await prisma.user.create({
+    data: {
+      name: "soumya",
+      email: "soumyasen@gmail.com"
+    }
+  })
+  
+  return c.json(res)
+})
+
+export default app
